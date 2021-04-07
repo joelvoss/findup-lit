@@ -15,11 +15,26 @@ const typeMappings = {
 	file: 'isFile',
 };
 
-function checkType({ type }) {
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * checkType tests if a given `type` is valid.
+ * @param {string} type
+ * @returns
+ */
+function checkType(type) {
 	if (type in typeMappings) return;
 	throw new Error(`Invalid type specified: ${type}`);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * matchType tests if a given `type` matches a file or directory type.
+ * @param {string} type
+ * @param {fs.Stats} stat
+ * @returns {boolean}
+ */
 function matchType(type, stat) {
 	return type === undefined || stat[typeMappings[type]]();
 }
@@ -35,23 +50,18 @@ class EndError extends Error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// NOTE(joel): The input can also be a promise, so we await it
-const testElement = async (element, tester) => tester(await element);
-
-////////////////////////////////////////////////////////////////////////////////
-
-// NOTE(joel): The input can also be a promise, so we `Promise.all()` them both.
-const finder = async element => {
-	const values = await Promise.all(element);
-	if (values[1] === true) {
-		throw new EndError(values[0]);
-	}
-
-	return false;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
+/**
+ * locatePath gets the first fulfilled path that is either a directory or file.
+ * @param {string[]} paths
+ * @param {Object} options
+ * @param {string} [options.cwd=process.cwd()]
+ * @param {string} [options.type='file']
+ * @param {boolean} [options.allowSymlinks=true]
+ * @param {number} [options.concurrency=Infinity]
+ * @param {boolean} [options.preserveOrder=true]
+ * @returns {Promise<string|undefined>}
+ * @throws
+ */
 export async function locatePath(paths, options) {
 	options = {
 		cwd: process.cwd(),
@@ -62,7 +72,7 @@ export async function locatePath(paths, options) {
 		...options,
 	};
 
-	checkType(options);
+	checkType(options.type);
 
 	const statFn = options.allowSymlinks ? fsStat : fsLStat;
 
@@ -71,9 +81,9 @@ export async function locatePath(paths, options) {
 	// NOTE(joel): Start all the promises concurrently with optional limit.
 	const items = [...paths].map(element => [
 		element,
-		limit(testElement, element, async _path => {
+		limit(async () => {
 			try {
-				const stat = await statFn(path.resolve(options.cwd, _path));
+				const stat = await statFn(path.resolve(options.cwd, element));
 				return matchType(options.type, stat);
 			} catch {
 				return false;
@@ -85,9 +95,19 @@ export async function locatePath(paths, options) {
 	const checkLimit = pLimit(options.preserveOrder ? 1 : Infinity);
 
 	try {
-		// NOTE(joel): When the `finder` function has found a file, it throws
-		// an `EndError` to indicate that we're done.
-		await Promise.all(items.map(element => checkLimit(finder, element)));
+		await Promise.all(
+			items.map(element =>
+				checkLimit(async () => {
+					const values = await Promise.all(element);
+					// NOTE(joel): When we found a file, we throw an `EndError` to
+					// indicate that we're done.
+					if (values[1] === true) {
+						throw new EndError(values[0]);
+					}
+					return false;
+				}),
+			),
+		);
 	} catch (error) {
 		if (error instanceof EndError) {
 			return error.value;
@@ -99,6 +119,15 @@ export async function locatePath(paths, options) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * locatePathSync gets the first path that is either a directory or file.
+ * @param {string[]} paths
+ * @param {Object} options
+ * @param {string} [options.cwd=process.cwd()]
+ * @param {string} [options.type='file']
+ * @param {boolean} [options.allowSymlinks=true]
+ * @returns {string|undefined}
+ */
 export function locatePathSync(paths, options) {
 	options = {
 		cwd: process.cwd(),
@@ -107,16 +136,16 @@ export function locatePathSync(paths, options) {
 		...options,
 	};
 
-	checkType(options);
+	checkType(options.type);
 
 	const statFn = options.allowSymlinks ? fs.statSync : fs.lstatSync;
 
-	for (const path_ of paths) {
+	for (const _path of paths) {
 		try {
-			const stat = statFn(path.resolve(options.cwd, path_));
+			const stat = statFn(path.resolve(options.cwd, _path));
 
 			if (matchType(options.type, stat)) {
-				return path_;
+				return _path;
 			}
 		} catch {}
 	}

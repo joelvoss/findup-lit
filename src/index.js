@@ -4,12 +4,35 @@ import { pathExists, pathExistsSync } from './path-exists';
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * findUpStop can be returned by a matcher function to stop the search and
+ * cause `findUp` to immediately return.
+ * @type {Symbol}
+ */
 export const findUpStop = Symbol('findUp.stop');
+
+/**
+ * findUpExists asynchronously checks if a given `path` (file or directory)
+ * exists.
+ * @type {(path: string) => Promise<boolean>}
+ */
 export const findUpExists = pathExists;
+
+/**
+ * findUpExistsSync synchronously checks if a given `path` (file or directory)
+ * exists.
+ * @type {(path: string) => boolean}
+ */
 export const findUpExistsSync = pathExistsSync;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * findUp walks the directory tree up until it finds the given `name`.
+ * @param {string|string[]|(directory: string) => string|undefined} name
+ * @param {Object} [options={}]
+ * @returns {Promise<string>|undefined}
+ */
 export async function findUp(name, options = {}) {
 	let directory = path.resolve(options.cwd || '');
 	const { root } = path.parse(directory);
@@ -50,6 +73,12 @@ export async function findUp(name, options = {}) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * findUpSync walks the directory tree up until it finds the given `name`.
+ * @param {string|string[]|(directory: string) => string|undefined} name
+ * @param {Object} [options={}]
+ * @returns {string|undefined}
+ */
 export function findUpSync(name, options = {}) {
 	let directory = path.resolve(options.cwd || '');
 	const { root } = path.parse(directory);
