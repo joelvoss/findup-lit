@@ -1,0 +1,46 @@
+{
+  "name": "findup-lit",
+  "description": "This package finds a file or directory by walking up parent directories.",
+  "version": "0.0.1",
+  "author": "Joel Voss <mail@joelvoss.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/joelvoss/findup-lit",
+  "bugs": {
+    "url": "https://github.com/joelvoss/findup-lit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joelvoss/findup-lit.git"
+  },
+  "source": "src/index.js",
+  "main": "dist/findup-lit.js",
+  "module": "dist/findup-lit.module.js",
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "./Taskfile.sh",
+    "test": "./Taskfile.sh test",
+    "prepublishOnly": "./Taskfile.sh build"
+  },
+  "dependencies": {
+    "plimit-lit": "^1.0.0"
+  },
+  "devDependencies": {
+    "@jvdx/core": "^2.2.7",
+    "fixturez": "^1.1.0"
+  },
+  "prettier": "@jvdx/prettier-config",
+  "prettierIgnore": [
+    "tests/",
+    "dist/"
+  ],
+  "eslintConfig": {
+    "extends": "@jvdx/eslint-config"
+  },
+  "eslintIgnore": [
+    "tests/",
+    "dist/"
+  ]
+}
