@@ -1,7 +1,7 @@
 {
   "name": "findup-lit",
   "description": "This package finds a file or directory by walking up parent directories.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "Joel Voss <mail@joelvoss.com>",
   "license": "MIT",
   "homepage": "https://github.com/joelvoss/findup-lit",
