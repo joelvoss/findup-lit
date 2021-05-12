@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import fs from 'fs';
 
 /**
  * pathExists asynchronously checks if a given `path` (file or directory)

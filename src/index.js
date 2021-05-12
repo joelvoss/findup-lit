@@ -1,4 +1,4 @@
-import * as path from 'path';
+import path from 'path';
 import { locatePath, locatePathSync } from './locate-path';
 import { pathExists, pathExistsSync } from './path-exists';
 
