@@ -33,7 +33,7 @@
     "plimit-lit": "^1.1.3"
   },
   "devDependencies": {
-    "@jvdx/core": "^2.3.6",
+    "@jvdx/core": "^2.3.7",
     "fixturez": "^1.1.0"
   },
   "prettier": "@jvdx/prettier-config",
