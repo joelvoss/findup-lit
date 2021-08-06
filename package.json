@@ -13,13 +13,10 @@
     "url": "git+https://github.com/joelvoss/findup-lit.git"
   },
   "source": "src/index.js",
-  "main": "dist/findup-lit.js",
-  "module": "dist/findup-lit.m.js",
-  "exports": {
-    "require": "./dist/findup-lit.js",
-    "default": "./dist/findup-lit.modern.js"
-  },
-  "types": "dist/index.d.ts",
+  "main": "./dist/findup-lit.js",
+  "module": "./dist/findup-lit.m.js",
+  "exports": "./dist/findup-lit.modern.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "LICENSE"
