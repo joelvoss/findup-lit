@@ -15,7 +15,10 @@
   "source": "src/index.js",
   "main": "./dist/findup-lit.js",
   "module": "./dist/findup-lit.m.js",
-  "exports": "./dist/findup-lit.modern.js",
+  "exports": {
+    "import": "./dist/findup-lit.modern.js",
+    "require": "./dist/findup-lit.js"
+  },
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
