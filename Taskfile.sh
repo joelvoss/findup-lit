@@ -33,7 +33,6 @@ test() {
 }
 
 validate() {
-  format $*
   lint $*
   test $*
 }
