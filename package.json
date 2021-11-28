@@ -31,10 +31,10 @@
     "prepublishOnly": "./Taskfile.sh build"
   },
   "dependencies": {
-    "plimit-lit": "^1.2.1"
+    "plimit-lit": "^1.2.3"
   },
   "devDependencies": {
-    "@jvdx/core": "^2.7.1",
+    "@jvdx/core": "^2.9.1",
     "fixturez": "^1.1.0"
   },
   "prettier": "@jvdx/prettier-config",
