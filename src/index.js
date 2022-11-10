@@ -28,9 +28,25 @@ export const findUpExistsSync = pathExistsSync;
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * @typedef {Object} Options
+ * @prop {URL | string} [cwd]
+ * @prop {'file' | 'directory'} [type]
+ * @prop {boolean} [allowSymlinks]
+ */
+
+/**
+ * @typedef {Object} AsyncOptions
+ * @prop {URL | string} [cwd]
+ * @prop {'file' | 'directory'} [type]
+ * @prop {boolean} [allowSymlinks]
+ * @prop {number} [concurrency]
+ * @prop {boolean} [preserveOrder]
+ */
+
+/**
  * findUp walks the directory tree up until it finds the given `name`.
  * @param {string|string[]|(directory: string) => string|undefined} name
- * @param {Object} [options={}]
+ * @param {AsyncOptions} [options={}]
  * @returns {Promise<string>|undefined}
  */
 export async function findUp(name, options = {}) {
@@ -76,7 +92,7 @@ export async function findUp(name, options = {}) {
 /**
  * findUpSync walks the directory tree up until it finds the given `name`.
  * @param {string|string[]|(directory: string) => string|undefined} name
- * @param {Object} [options={}]
+ * @param {Options} [options={}]
  * @returns {string|undefined}
  */
 export function findUpSync(name, options = {}) {
