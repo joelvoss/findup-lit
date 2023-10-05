@@ -2,10 +2,6 @@
 
 This package finds a file or directory by walking up parent directories.
 
-## Requirements
-
-- Node v12+
-
 ## Installation
 
 ```bash
