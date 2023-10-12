@@ -35,7 +35,7 @@
     "prepublishOnly": "./Taskfile.sh build"
   },
   "dependencies": {
-    "plimit-lit": "^1.6.0"
+    "plimit-lit": "^2.1.0"
   },
   "devDependencies": {
     "@jvdx/core": "^3.6.0",
