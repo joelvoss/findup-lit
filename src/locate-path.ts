@@ -1,12 +1,12 @@
-import path from 'path';
-import fs from 'fs';
-import { promisify } from 'util';
+import path from 'node:path';
+import fs, { type Stats } from 'node:fs';
+import * as fsAsync from 'node:fs/promises';
 import { pLimit } from 'plimit-lit';
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const fsStat = promisify(fs.stat);
-const fsLStat = promisify(fs.lstat);
+const fsStat = fsAsync.stat;
+const fsLStat = fsAsync.lstat;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -19,30 +19,29 @@ const typeMappings = {
 
 /**
  * checkType tests if a given `type` is valid.
- * @param {string} type
- * @returns
  */
-function checkType(type) {
-	if (type in typeMappings) return;
-	throw new Error(`Invalid type specified: ${type}`);
+function checkType(type?: string) {
+	if (type == null || !(type in typeMappings)) {
+		throw new Error(`Invalid type specified: ${type}`);
+	}
+	return;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
  * matchType tests if a given `type` matches a file or directory type.
- * @param {string} type
- * @param {fs.Stats} stat
- * @returns {boolean}
  */
-function matchType(type, stat) {
+function matchType(type: string, stat: Stats) {
+	// @ts-expect-error - TS doesn't know that `typeMappings` is a valid key.
 	return type === undefined || stat[typeMappings[type]]();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 class EndError extends Error {
-	constructor(value) {
+	value: string;
+	constructor(value: string) {
 		super();
 		this.value = value;
 	}
@@ -50,20 +49,19 @@ class EndError extends Error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+export type LocatePathOptions = {
+	cwd?: string;
+	type?: 'file' | 'directory';
+	allowSymlinks?: boolean;
+	concurrency?: number;
+	preserveOrder?: boolean;
+};
+
 /**
  * locatePath gets the first fulfilled path that is either a directory or file.
- * @param {string[]} paths
- * @param {Object} options
- * @param {string} [options.cwd=process.cwd()]
- * @param {string} [options.type='file']
- * @param {boolean} [options.allowSymlinks=true]
- * @param {number} [options.concurrency=Infinity]
- * @param {boolean} [options.preserveOrder=true]
- * @returns {Promise<string|undefined>}
- * @throws
  */
-export async function locatePath(paths, options) {
-	options = {
+export async function locatePath(paths: string[], options: LocatePathOptions) {
+	const opts = {
 		cwd: process.cwd(),
 		type: 'file',
 		allowSymlinks: true,
@@ -72,19 +70,19 @@ export async function locatePath(paths, options) {
 		...options,
 	};
 
-	checkType(options.type);
+	checkType(opts.type);
 
-	const statFn = options.allowSymlinks ? fsStat : fsLStat;
+	const statFn = opts.allowSymlinks ? fsStat : fsLStat;
 
-	const limit = pLimit(options.concurrency);
+	const limit = pLimit(opts.concurrency);
 
 	// NOTE(joel): Start all the promises concurrently with optional limit.
 	const items = [...paths].map(element => [
 		element,
 		limit(async () => {
 			try {
-				const stat = await statFn(path.resolve(options.cwd, element));
-				return matchType(options.type, stat);
+				const stat = await statFn(path.resolve(opts.cwd, element));
+				return matchType(opts.type, stat);
 			} catch {
 				return false;
 			}
@@ -92,7 +90,7 @@ export async function locatePath(paths, options) {
 	]);
 
 	// NOTE(joel): Check the promises either serially or concurrently.
-	const checkLimit = pLimit(options.preserveOrder ? 1 : Infinity);
+	const checkLimit = pLimit(opts.preserveOrder ? 1 : Infinity);
 
 	try {
 		await Promise.all(
@@ -119,34 +117,39 @@ export async function locatePath(paths, options) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+export type LocatePathSyncOptions = {
+	cwd?: string;
+	type?: 'file' | 'directory';
+	allowSymlinks?: boolean;
+};
+
 /**
  * locatePathSync gets the first path that is either a directory or file.
- * @param {string[]} paths
- * @param {Object} options
- * @param {string} [options.cwd=process.cwd()]
- * @param {string} [options.type='file']
- * @param {boolean} [options.allowSymlinks=true]
- * @returns {string|undefined}
  */
-export function locatePathSync(paths, options) {
-	options = {
+export function locatePathSync(
+	paths: string[],
+	options: LocatePathSyncOptions,
+) {
+	const opts = {
 		cwd: process.cwd(),
 		allowSymlinks: true,
 		type: 'file',
 		...options,
 	};
 
-	checkType(options.type);
+	checkType(opts.type);
 
-	const statFn = options.allowSymlinks ? fs.statSync : fs.lstatSync;
+	const statFn = opts.allowSymlinks ? fs.statSync : fs.lstatSync;
 
 	for (const _path of paths) {
 		try {
-			const stat = statFn(path.resolve(options.cwd, _path));
+			const stat = statFn(path.resolve(opts.cwd, _path));
 
-			if (matchType(options.type, stat)) {
+			if (matchType(opts.type, stat)) {
 				return _path;
 			}
-		} catch {}
+		} catch {
+			/* empty */
+		}
 	}
 }

@@ -1,5 +1,11 @@
-import path from 'path';
-import { locatePath, locatePathSync } from './locate-path';
+import path from 'node:path';
+import { type PathLike } from 'node:fs';
+import {
+	type LocatePathOptions,
+	type LocatePathSyncOptions,
+	locatePath,
+	locatePathSync,
+} from './locate-path';
 import { pathExists, pathExistsSync } from './path-exists';
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -7,54 +13,53 @@ import { pathExists, pathExistsSync } from './path-exists';
 /**
  * findUpStop can be returned by a matcher function to stop the search and
  * cause `findUp` to immediately return.
- * @type {Symbol}
  */
-export const findUpStop = Symbol('findUp.stop');
+export const findUpStop: symbol = Symbol('findUp.stop');
 
 /**
  * findUpExists asynchronously checks if a given `path` (file or directory)
  * exists.
- * @type {(path: string) => Promise<boolean>}
  */
 export const findUpExists = pathExists;
 
 /**
  * findUpExistsSync synchronously checks if a given `path` (file or directory)
  * exists.
- * @type {(path: string) => boolean}
  */
 export const findUpExistsSync = pathExistsSync;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/**
- * @typedef {Object} Options
- * @prop {URL | string} [cwd]
- * @prop {'file' | 'directory'} [type]
- * @prop {boolean} [allowSymlinks]
- */
-
-/**
- * @typedef {Object} AsyncOptions
- * @prop {URL | string} [cwd]
- * @prop {'file' | 'directory'} [type]
- * @prop {boolean} [allowSymlinks]
- * @prop {number} [concurrency]
- * @prop {boolean} [preserveOrder]
- */
+type Name =
+	| string
+	| string[]
+	| ((
+			directory: PathLike,
+	  ) =>
+			| void
+			| PathLike
+			| typeof findUpStop
+			| boolean
+			| Promise<void | PathLike | typeof findUpStop | boolean>);
+type MatcherOptions = LocatePathOptions & {
+	cwd: string;
+};
 
 /**
  * findUp walks the directory tree up until it finds the given `name`.
- * @param {string|string[]|(directory: string) => string|undefined} name
- * @param {AsyncOptions} [options={}]
- * @returns {Promise<string>|undefined}
  */
-export async function findUp(name, options = {}) {
+export async function findUp(name: Name, options: LocatePathOptions = {}) {
 	let directory = path.resolve(options.cwd || '');
 	const { root } = path.parse(directory);
-	const paths = [].concat(name);
 
-	const runMatcher = async locateOptions => {
+	let paths: string[];
+	if (Array.isArray(name)) {
+		paths = ([] as string[]).concat(name);
+	} else if (typeof name === 'string') {
+		paths = [name];
+	}
+
+	const runMatcher = async (locateOptions: MatcherOptions) => {
 		if (typeof name !== 'function') {
 			return locatePath(paths, locateOptions);
 		}
@@ -71,36 +76,42 @@ export async function findUp(name, options = {}) {
 	while (true) {
 		const foundPath = await runMatcher({ ...options, cwd: directory });
 
-		if (foundPath === findUpStop) {
-			return;
-		}
+		if (foundPath === findUpStop) return;
+		if (foundPath) return path.resolve(directory, foundPath as string);
 
-		if (foundPath) {
-			return path.resolve(directory, foundPath);
-		}
-
-		if (directory === root) {
-			return;
-		}
-
+		if (directory === root) return;
 		directory = path.dirname(directory);
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+type NameSync =
+	| string
+	| string[]
+	| ((directory: PathLike) => void | PathLike | typeof findUpStop | boolean);
+type MatcherSyncOptions = LocatePathSyncOptions & {
+	cwd: string;
+};
+
 /**
  * findUpSync walks the directory tree up until it finds the given `name`.
- * @param {string|string[]|(directory: string) => string|undefined} name
- * @param {Options} [options={}]
- * @returns {string|undefined}
  */
-export function findUpSync(name, options = {}) {
+export function findUpSync(
+	name: NameSync,
+	options: LocatePathSyncOptions = {},
+) {
 	let directory = path.resolve(options.cwd || '');
 	const { root } = path.parse(directory);
-	const paths = [].concat(name);
 
-	const runMatcher = locateOptions => {
+	let paths: string[];
+	if (Array.isArray(name)) {
+		paths = ([] as string[]).concat(name);
+	} else if (typeof name === 'string') {
+		paths = [name];
+	}
+
+	const runMatcher = (locateOptions: MatcherSyncOptions) => {
 		if (typeof name !== 'function') {
 			return locatePathSync(paths, locateOptions);
 		}
@@ -117,18 +128,10 @@ export function findUpSync(name, options = {}) {
 	while (true) {
 		const foundPath = runMatcher({ ...options, cwd: directory });
 
-		if (foundPath === findUpStop) {
-			return;
-		}
+		if (foundPath === findUpStop) return;
+		if (foundPath) return path.resolve(directory, foundPath as string);
 
-		if (foundPath) {
-			return path.resolve(directory, foundPath);
-		}
-
-		if (directory === root) {
-			return;
-		}
-
+		if (directory === root) return;
 		directory = path.dirname(directory);
 	}
 }

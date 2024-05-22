@@ -1,14 +1,13 @@
-import fs from 'fs';
+import fs from 'node:fs';
+import * as fsAsync from 'node:fs/promises';
 
 /**
  * pathExists asynchronously checks if a given `path` (file or directory)
  * exists.
- * @param {string} path
- * @returns {Promise<boolean>}
  */
-export async function pathExists(path) {
+export async function pathExists(path: string) {
 	try {
-		await fs.promises.access(path);
+		await fsAsync.access(path);
 		return true;
 	} catch {
 		return false;
@@ -18,10 +17,8 @@ export async function pathExists(path) {
 /**
  * pathExistsSync synchronously checks if a given `path` (file or directory)
  * exists.
- * @param {string} path
- * @returns {boolean}
  */
-export function pathExistsSync(path) {
+export function pathExistsSync(path: string) {
 	try {
 		fs.accessSync(path);
 		return true;

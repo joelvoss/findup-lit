@@ -1,14 +1,21 @@
-import fs from 'fs';
-import path from 'path';
-import { promisify } from 'util';
-import fixtures from 'fixturez';
+import { describe, test, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { promisify } from 'node:util';
+import {
+	findUp,
+	findUpSync,
+	findUpStop,
+	findUpExists,
+	findUpExistsSync,
+} from '../src/index';
 
 ////////////////////////////////////////////////////////////////////////////////
 
 const cwd = __dirname;
+const fixturePath = path.resolve(__dirname, 'fixtures');
 const packageRoot = cwd.replace('/tests', '/');
-
-const f = fixtures(cwd);
 const isWindows = process.platform === 'win32';
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,23 +30,28 @@ function isPathInside(childPath, parentPath) {
 	);
 }
 
+function copyFixture(name) {
+	const temporaryDirectory = fs.realpathSync(os.tmpdir());
+	const dest = path.join(temporaryDirectory, name);
+	const from = path.join(fixturePath, name);
+	fs.cpSync(from, dest, { recursive: true });
+	return dest;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 describe(`findup`, () => {
-	const { findUp, findUpStop, findUpExists } = require('../src/index');
-	let fixturePath = f.find('fixtures');
-
-	it(`should find a child file`, async () => {
+	test(`should find a child file`, async () => {
 		const p = await findUp('package.json');
 		expect(p).toEqual(path.join(packageRoot, 'package.json'));
 	});
 
-	it(`should find a child directory`, async () => {
+	test(`should find a child directory`, async () => {
 		const p = await findUp('src', { type: 'directory' });
 		expect(p).toEqual(path.join(packageRoot, 'src'));
 	});
 
-	it(`should explicitly find a child file by 'type: file'`, async () => {
+	test(`should explicitly find a child file by 'type: file'`, async () => {
 		const f = await findUp('package.json', { type: 'file' });
 		expect(f).toEqual(path.join(packageRoot, 'package.json'));
 
@@ -48,7 +60,7 @@ describe(`findup`, () => {
 	});
 
 	if (!isWindows) {
-		it(`should find a symbolic link (file and directory)`, async () => {
+		test(`should find a symbolic link (file and directory)`, async () => {
 			let p = await findUp('file-link', { cwd: fixturePath });
 			expect(p).toEqual(`${fixturePath}/file-link`);
 
@@ -70,47 +82,47 @@ describe(`findup`, () => {
 		});
 	}
 
-	it(`should find a child file with a custom 'cwd'`, async () => {
+	test(`should find a child file with a custom 'cwd'`, async () => {
 		const p = await findUp('baz.js', { cwd: fixturePath });
 		expect(p).toEqual(`${fixturePath}/baz.js`);
 	});
 
-	it(`should find a child file with a custom 'cwd' (array as parameter)`, async () => {
+	test(`should find a child file with a custom 'cwd' (array as parameter)`, async () => {
 		const p = await findUp(['baz.js'], { cwd: fixturePath });
 		expect(p).toEqual(`${fixturePath}/baz.js`);
 	});
 
-	it(`should find the first child file with a custom 'cwd' (array as parameter)`, async () => {
+	test(`should find the first child file with a custom 'cwd' (array as parameter)`, async () => {
 		const p = await findUp(['foo.js', 'baz.js'], { cwd: fixturePath });
 		expect(p).toEqual(`${fixturePath}/foo.js`);
 	});
 
-	it(`should find the second child file with a custom 'cwd' (array as parameter)`, async () => {
+	test(`should find the second child file with a custom 'cwd' (array as parameter)`, async () => {
 		const p = await findUp(['unknown', 'baz.js'], { cwd: fixturePath });
 		expect(p).toEqual(`${fixturePath}/baz.js`);
 	});
 
-	it(`should find a child directory with a custom 'cwd'`, async () => {
+	test(`should find a child directory with a custom 'cwd'`, async () => {
 		const p = await findUp('foo', { cwd: fixturePath, type: 'directory' });
 		expect(p).toEqual(`${fixturePath}/foo`);
 	});
 
-	it(`should find parent file with a custom 'cwd'`, async () => {
+	test(`should find parent file with a custom 'cwd'`, async () => {
 		const p = await findUp('baz.js', { cwd: `${fixturePath}/foo/bar` });
 		expect(p).toEqual(`${fixturePath}/baz.js`);
 	});
 
-	it(`should find a nested descendant file`, async () => {
+	test(`should find a nested descendant file`, async () => {
 		const p = await findUp('tests/fixtures/baz.js');
 		expect(p).toEqual(`${fixturePath}/baz.js`);
 	});
 
-	it(`should find a nested descendant directory`, async () => {
+	test(`should find a nested descendant directory`, async () => {
 		const p = await findUp('tests/fixtures/foo', { type: 'directory' });
 		expect(p).toEqual(`${fixturePath}/foo`);
 	});
 
-	it(`should find a nested descendant directory with a custom 'cwd'`, async () => {
+	test(`should find a nested descendant directory with a custom 'cwd'`, async () => {
 		const p = await findUp('tests/fixtures/foo/bar', {
 			cwd: 'node_modules',
 			type: 'directory',
@@ -118,7 +130,7 @@ describe(`findup`, () => {
 		expect(p).toEqual(`${fixturePath}/foo/bar`);
 	});
 
-	it(`should find a nested cousin directory with a custom 'cwd'`, async () => {
+	test(`should find a nested cousin directory with a custom 'cwd'`, async () => {
 		const p = await findUp('tests/fixtures/foo/bar', {
 			cwd: 'tests',
 			type: 'directory',
@@ -126,7 +138,7 @@ describe(`findup`, () => {
 		expect(p).toEqual(`${fixturePath}/foo/bar`);
 	});
 
-	it(`should find an ancestor directory with a custom 'cwd'`, async () => {
+	test(`should find an ancestor directory with a custom 'cwd'`, async () => {
 		const p = await findUp('tests', {
 			cwd: 'tests/fixtures/foo/bar',
 			type: 'directory',
@@ -134,18 +146,18 @@ describe(`findup`, () => {
 		expect(p).toEqual(`${packageRoot}tests`);
 	});
 
-	it(`should find a directory by an absolute path`, async () => {
+	test(`should find a directory by an absolute path`, async () => {
 		const p = await findUp(`${fixturePath}/foo/bar`, { type: 'directory' });
 		expect(p).toEqual(`${fixturePath}/foo/bar`);
 	});
 
-	it(`should not find a file by an absolute path`, async () => {
+	test(`should not find a file by an absolute path`, async () => {
 		const p = await findUp(path.resolve('somenonexistentfile.js'));
 		expect(p).toEqual(undefined);
 	});
 
-	it(`should find a directory by an absolute path with a disjoint 'cwd'`, async () => {
-		const tmpPath = f.copy('foo');
+	test(`should find a directory by an absolute path with a disjoint 'cwd'`, async () => {
+		const tmpPath = copyFixture('foo');
 		const p = await findUp(`${fixturePath}/foo/bar`, {
 			cwd: tmpPath,
 			type: 'directory',
@@ -153,18 +165,18 @@ describe(`findup`, () => {
 		expect(p).toEqual(`${fixturePath}/foo/bar`);
 	});
 
-	it(`should not find a file`, async () => {
+	test(`should not find a file`, async () => {
 		const p = await findUp('somenonexistentfile.js');
 		expect(p).toEqual(undefined);
 	});
 
-	it(`should not find a file with a disjoint 'cwd'`, async () => {
-		const tmpPath = f.copy('foo');
+	test(`should not find a file with a disjoint 'cwd'`, async () => {
+		const tmpPath = copyFixture('foo');
 		const p = await findUp('package.json', { cwd: tmpPath });
 		expect(p).toEqual(undefined);
 	});
 
-	it(`should find a file/directory by a matcher function`, async () => {
+	test(`should find a file/directory by a matcher function`, async () => {
 		const cwd = process.cwd();
 
 		let p = await findUp(
@@ -196,7 +208,7 @@ describe(`findup`, () => {
 		expect(p).toEqual(`${packageRoot}package.json`);
 	});
 
-	it(`should not find a file/directory by a matcher function`, async () => {
+	test(`should not find a file/directory by a matcher function`, async () => {
 		const cwd = process.cwd();
 		const { root } = path.parse(cwd);
 		const visited = new Set();
@@ -216,7 +228,7 @@ describe(`findup`, () => {
 		expect(visited.has(root)).toEqual(true);
 	});
 
-	it('should throw when the matcher function throws', async () => {
+	test('should throw when the matcher function throws', async () => {
 		const cwd = process.cwd();
 		const visited = new Set();
 
@@ -233,7 +245,7 @@ describe(`findup`, () => {
 		expect(visited.size).toEqual(1);
 	});
 
-	it('should throw when the matcher function rejects', async () => {
+	test('should throw when the matcher function rejects', async () => {
 		const cwd = process.cwd();
 		const visited = new Set();
 
@@ -250,7 +262,7 @@ describe(`findup`, () => {
 		expect(visited.size).toEqual(1);
 	});
 
-	it(`should stop early if the matcher function returns the 'stop' symbol`, async () => {
+	test(`should stop early if the matcher function returns the 'stop' symbol`, async () => {
 		const cwd = process.cwd();
 		const visited = new Set();
 
@@ -264,7 +276,7 @@ describe(`findup`, () => {
 		expect(visited.size).toEqual(1);
 	});
 
-	it('should check if a path exists', async () => {
+	test('should check if a path exists', async () => {
 		if (!isWindows) {
 			let d = await findUpExists(`${fixturePath}/directory-link`);
 			expect(d).toEqual(true);
@@ -286,20 +298,17 @@ describe(`findup`, () => {
 ////////////////////////////////////////////////////////////////////////////////
 
 describe(`findUpSync`, () => {
-	const { findUpSync, findUpStop, findUpExistsSync } = require('../src/index');
-	let fixturePath = f.find('fixtures');
-
-	it(`should find a child file`, () => {
+	test(`should find a child file`, () => {
 		const p = findUpSync('package.json');
 		expect(p).toEqual(path.join(packageRoot, 'package.json'));
 	});
 
-	it(`should find a child directory`, () => {
+	test(`should find a child directory`, () => {
 		const p = findUpSync('src', { type: 'directory' });
 		expect(p).toEqual(path.join(packageRoot, 'src'));
 	});
 
-	it(`should explicitly find a child file by 'type: file'`, () => {
+	test(`should explicitly find a child file by 'type: file'`, () => {
 		const f = findUpSync('package.json', { type: 'file' });
 		expect(f).toEqual(path.join(packageRoot, 'package.json'));
 
@@ -308,7 +317,7 @@ describe(`findUpSync`, () => {
 	});
 
 	if (!isWindows) {
-		it(`should find a symbolic link (file and directory)`, () => {
+		test(`should find a symbolic link (file and directory)`, () => {
 			let p = findUpSync('file-link', { cwd: fixturePath });
 			expect(p).toEqual(`${fixturePath}/file-link`);
 
@@ -330,47 +339,47 @@ describe(`findUpSync`, () => {
 		});
 	}
 
-	it(`should find a child file with a custom 'cwd'`, () => {
+	test(`should find a child file with a custom 'cwd'`, () => {
 		const p = findUpSync('baz.js', { cwd: fixturePath });
 		expect(p).toEqual(`${fixturePath}/baz.js`);
 	});
 
-	it(`should find a child file with a custom 'cwd' (array as parameter)`, () => {
+	test(`should find a child file with a custom 'cwd' (array as parameter)`, () => {
 		const p = findUpSync(['baz.js'], { cwd: fixturePath });
 		expect(p).toEqual(`${fixturePath}/baz.js`);
 	});
 
-	it(`should find the first child file with a custom 'cwd' (array as parameter)`, () => {
+	test(`should find the first child file with a custom 'cwd' (array as parameter)`, () => {
 		const p = findUpSync(['foo.js', 'baz.js'], { cwd: fixturePath });
 		expect(p).toEqual(`${fixturePath}/foo.js`);
 	});
 
-	it(`should find the second child file with a custom 'cwd' (array as parameter)`, () => {
+	test(`should find the second child file with a custom 'cwd' (array as parameter)`, () => {
 		const p = findUpSync(['unknown', 'baz.js'], { cwd: fixturePath });
 		expect(p).toEqual(`${fixturePath}/baz.js`);
 	});
 
-	it(`should find a child directory with a custom 'cwd'`, () => {
+	test(`should find a child directory with a custom 'cwd'`, () => {
 		const p = findUpSync('foo', { cwd: fixturePath, type: 'directory' });
 		expect(p).toEqual(`${fixturePath}/foo`);
 	});
 
-	it(`should find parent file with a custom 'cwd'`, () => {
+	test(`should find parent file with a custom 'cwd'`, () => {
 		const p = findUpSync('baz.js', { cwd: `${fixturePath}/foo/bar` });
 		expect(p).toEqual(`${fixturePath}/baz.js`);
 	});
 
-	it(`should find a nested descendant file`, () => {
+	test(`should find a nested descendant file`, () => {
 		const p = findUpSync('tests/fixtures/baz.js');
 		expect(p).toEqual(`${fixturePath}/baz.js`);
 	});
 
-	it(`should find a nested descendant directory`, () => {
+	test(`should find a nested descendant directory`, () => {
 		const p = findUpSync('tests/fixtures/foo', { type: 'directory' });
 		expect(p).toEqual(`${fixturePath}/foo`);
 	});
 
-	it(`should find a nested descendant directory with a custom 'cwd'`, () => {
+	test(`should find a nested descendant directory with a custom 'cwd'`, () => {
 		const p = findUpSync('tests/fixtures/foo/bar', {
 			cwd: 'node_modules',
 			type: 'directory',
@@ -378,7 +387,7 @@ describe(`findUpSync`, () => {
 		expect(p).toEqual(`${fixturePath}/foo/bar`);
 	});
 
-	it(`should find a nested cousin directory with a custom 'cwd'`, () => {
+	test(`should find a nested cousin directory with a custom 'cwd'`, () => {
 		const p = findUpSync('tests/fixtures/foo/bar', {
 			cwd: 'tests',
 			type: 'directory',
@@ -386,7 +395,7 @@ describe(`findUpSync`, () => {
 		expect(p).toEqual(`${fixturePath}/foo/bar`);
 	});
 
-	it(`should find an ancestor directory with a custom 'cwd'`, () => {
+	test(`should find an ancestor directory with a custom 'cwd'`, () => {
 		const p = findUpSync('tests', {
 			cwd: 'tests/fixtures/foo/bar',
 			type: 'directory',
@@ -394,18 +403,18 @@ describe(`findUpSync`, () => {
 		expect(p).toEqual(`${packageRoot}tests`);
 	});
 
-	it(`should find a directory by an absolute path`, () => {
+	test(`should find a directory by an absolute path`, () => {
 		const p = findUpSync(`${fixturePath}/foo/bar`, { type: 'directory' });
 		expect(p).toEqual(`${fixturePath}/foo/bar`);
 	});
 
-	it(`should not find a file by an absolute path`, () => {
+	test(`should not find a file by an absolute path`, () => {
 		const p = findUpSync(path.resolve('somenonexistentfile.js'));
 		expect(p).toEqual(undefined);
 	});
 
-	it(`should find a directory by an absolute path with a disjoint 'cwd'`, () => {
-		const tmpPath = f.copy('foo');
+	test(`should find a directory by an absolute path with a disjoint 'cwd'`, () => {
+		const tmpPath = copyFixture('foo');
 		const p = findUpSync(`${fixturePath}/foo/bar`, {
 			cwd: tmpPath,
 			type: 'directory',
@@ -413,18 +422,18 @@ describe(`findUpSync`, () => {
 		expect(p).toEqual(`${fixturePath}/foo/bar`);
 	});
 
-	it(`should not find a file`, () => {
+	test(`should not find a file`, () => {
 		const p = findUpSync('somenonexistentfile.js');
 		expect(p).toEqual(undefined);
 	});
 
-	it(`should not find a file with a disjoint 'cwd'`, () => {
-		const tmpPath = f.copy('foo');
+	test(`should not find a file with a disjoint 'cwd'`, () => {
+		const tmpPath = copyFixture('foo');
 		const p = findUpSync('package.json', { cwd: tmpPath });
 		expect(p).toEqual(undefined);
 	});
 
-	it(`should find a file/directory by a matcher function`, () => {
+	test(`should find a file/directory by a matcher function`, () => {
 		const cwd = process.cwd();
 
 		let p = findUpSync(
@@ -456,7 +465,7 @@ describe(`findUpSync`, () => {
 		expect(p).toEqual(`${packageRoot}package.json`);
 	});
 
-	it(`should not find a file/directory by a matcher function`, () => {
+	test(`should not find a file/directory by a matcher function`, () => {
 		const cwd = process.cwd();
 		const { root } = path.parse(cwd);
 		const visited = new Set();
@@ -476,7 +485,7 @@ describe(`findUpSync`, () => {
 		expect(visited.has(root)).toEqual(true);
 	});
 
-	it('should throw when the matcher function throws', () => {
+	test('should throw when the matcher function throws', () => {
 		const cwd = process.cwd();
 		const visited = new Set();
 
@@ -493,7 +502,7 @@ describe(`findUpSync`, () => {
 		expect(visited.size).toEqual(1);
 	});
 
-	it(`should stop early if the matcher function returns the 'stop' symbol`, () => {
+	test(`should stop early if the matcher function returns the 'stop' symbol`, () => {
 		const cwd = process.cwd();
 		const visited = new Set();
 
@@ -507,7 +516,7 @@ describe(`findUpSync`, () => {
 		expect(visited.size).toEqual(1);
 	});
 
-	it('should check if a path exists', () => {
+	test('should check if a path exists', () => {
 		if (!isWindows) {
 			let d = findUpExistsSync(`${fixturePath}/directory-link`);
 			expect(d).toEqual(true);
