@@ -1,6 +1,6 @@
-import path from 'node:path';
 import fs, { type Stats } from 'node:fs';
 import * as fsAsync from 'node:fs/promises';
+import path from 'node:path';
 import { pLimit } from 'plimit-lit';
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { describe, test, expect } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { locatePath, locatePathSync } from '../src/locate-path';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -36,12 +36,12 @@ describe(`locatePath`, () => {
 	});
 
 	test('should throw on invalid types', async () => {
-		expect(async () => {
+		await expect(async () => {
 			// @ts-expect-error - Testing invalid type
 			await locatePath(['foo'], { cwd: fixtures, type: 'imaginary' });
 		}).rejects.toThrowError('Invalid type specified: imaginary');
 
-		expect(async () => {
+		await expect(async () => {
 			await locatePath(['foo'], { cwd: fixtures, type: undefined });
 		}).rejects.toThrowError('Invalid type specified: undefined');
 	});

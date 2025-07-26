@@ -1,14 +1,14 @@
-import { describe, test, expect } from 'vitest';
 import fs from 'node:fs';
-import path from 'node:path';
 import os from 'node:os';
+import path from 'node:path';
 import { promisify } from 'node:util';
+import { describe, expect, test } from 'vitest';
 import {
 	findUp,
-	findUpSync,
-	findUpStop,
 	findUpExists,
 	findUpExistsSync,
+	findUpStop,
+	findUpSync,
 } from '../src/index';
 
 ////////////////////////////////////////////////////////////////////////////////
