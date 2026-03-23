@@ -1,1 +1,1 @@
-// silence is golden
+void 0;
