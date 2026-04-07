@@ -45,6 +45,6 @@
     "vitest": "4.1.3"
   },
   "dependencies": {
-    "plimit-lit": "3.2.0"
+    "plimit-lit": "3.2.1"
   }
 }
