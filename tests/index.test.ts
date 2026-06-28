@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
+
 import { describe, expect, test } from 'vitest';
+
 import {
 	findUp,
 	findUpExists,
@@ -24,9 +26,9 @@ function isPathInside(childPath, parentPath) {
 	const relation = path.relative(parentPath, childPath);
 	return Boolean(
 		relation &&
-			relation !== '..' &&
-			!relation.startsWith(`..${path.sep}`) &&
-			relation !== path.resolve(childPath),
+		relation !== '..' &&
+		!relation.startsWith(`..${path.sep}`) &&
+		relation !== path.resolve(childPath),
 	);
 }
 
@@ -180,7 +182,7 @@ describe(`findup`, () => {
 		const cwd = process.cwd();
 
 		let p = await findUp(
-			directory => {
+			(directory) => {
 				expect(directory).toEqual(cwd);
 				return directory;
 			},
@@ -197,12 +199,12 @@ describe(`findup`, () => {
 		p = await findUp(() => '..', { type: 'directory' });
 		expect(p).toEqual(path.join(cwd, '..'));
 
-		p = await findUp(directory => directory !== cwd && directory, {
+		p = await findUp((directory) => directory !== cwd && directory, {
 			type: 'directory',
 		});
 		expect(p).toEqual(path.join(cwd, '..'));
 
-		p = await findUp(directory => directory === cwd && 'package.json', {
+		p = await findUp((directory) => directory === cwd && 'package.json', {
 			cwd: fixturePath,
 		});
 		expect(p).toEqual(`${packageRoot}package.json`);
@@ -213,7 +215,7 @@ describe(`findup`, () => {
 		const { root } = path.parse(cwd);
 		const visited = new Set();
 
-		const p = await findUp(async directory => {
+		const p = await findUp(async (directory) => {
 			expect(typeof directory).toEqual('string');
 			const stat = await promisify(fs.stat)(directory);
 			expect(stat.isDirectory()).toEqual(true);
@@ -233,7 +235,7 @@ describe(`findup`, () => {
 		const visited = new Set();
 
 		try {
-			await findUp(directory => {
+			await findUp((directory) => {
 				visited.add(directory);
 				throw new Error('A sync error');
 			});
@@ -250,7 +252,7 @@ describe(`findup`, () => {
 		const visited = new Set();
 
 		try {
-			await findUp(async directory => {
+			await findUp(async (directory) => {
 				visited.add(directory);
 				throw new Error('An async error');
 			});
@@ -266,7 +268,7 @@ describe(`findup`, () => {
 		const cwd = process.cwd();
 		const visited = new Set();
 
-		const p = await findUp(async directory => {
+		const p = await findUp(async (directory) => {
 			visited.add(directory);
 			return findUpStop;
 		});
@@ -437,7 +439,7 @@ describe(`findUpSync`, () => {
 		const cwd = process.cwd();
 
 		let p = findUpSync(
-			directory => {
+			(directory) => {
 				expect(directory).toEqual(cwd);
 				return directory;
 			},
@@ -454,12 +456,12 @@ describe(`findUpSync`, () => {
 		p = findUpSync(() => '..', { type: 'directory' });
 		expect(p).toEqual(path.join(cwd, '..'));
 
-		p = findUpSync(directory => directory !== cwd && directory, {
+		p = findUpSync((directory) => directory !== cwd && directory, {
 			type: 'directory',
 		});
 		expect(p).toEqual(path.join(cwd, '..'));
 
-		p = findUpSync(directory => directory === cwd && 'package.json', {
+		p = findUpSync((directory) => directory === cwd && 'package.json', {
 			cwd: fixturePath,
 		});
 		expect(p).toEqual(`${packageRoot}package.json`);
@@ -470,7 +472,7 @@ describe(`findUpSync`, () => {
 		const { root } = path.parse(cwd);
 		const visited = new Set();
 
-		const p = findUpSync(directory => {
+		const p = findUpSync((directory) => {
 			expect(typeof directory).toEqual('string');
 			const stat = fs.statSync(directory);
 			expect(stat.isDirectory()).toEqual(true);
@@ -490,7 +492,7 @@ describe(`findUpSync`, () => {
 		const visited = new Set();
 
 		try {
-			findUpSync(directory => {
+			findUpSync((directory) => {
 				visited.add(directory);
 				throw new Error('A sync error');
 			});
@@ -506,7 +508,7 @@ describe(`findUpSync`, () => {
 		const cwd = process.cwd();
 		const visited = new Set();
 
-		const p = findUpSync(directory => {
+		const p = findUpSync((directory) => {
 			visited.add(directory);
 			return findUpStop;
 		});

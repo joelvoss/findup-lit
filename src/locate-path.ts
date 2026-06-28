@@ -1,6 +1,7 @@
 import fs, { type Stats } from 'node:fs';
 import * as fsAsync from 'node:fs/promises';
 import path from 'node:path';
+
 import { pLimit } from 'plimit-lit';
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -77,7 +78,7 @@ export async function locatePath(paths: string[], options: LocatePathOptions) {
 	const limit = pLimit(opts.concurrency);
 
 	// NOTE(joel): Start all the promises concurrently with optional limit.
-	const items = [...paths].map(element => [
+	const items = [...paths].map((element) => [
 		element,
 		limit(async () => {
 			try {
@@ -94,7 +95,7 @@ export async function locatePath(paths: string[], options: LocatePathOptions) {
 
 	try {
 		await Promise.all(
-			items.map(element =>
+			items.map((element) =>
 				checkLimit(async () => {
 					const values = await Promise.all(element);
 					// NOTE(joel): When we found a file, we throw an `EndError` to

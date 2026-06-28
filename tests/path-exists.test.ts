@@ -1,5 +1,7 @@
 import path from 'node:path';
+
 import { describe, expect, test } from 'vitest';
+
 import { pathExists, pathExistsSync } from '../src/path-exists';
 
 const fixtures = path.resolve(__dirname, 'fixtures');

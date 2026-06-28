@@ -1,5 +1,7 @@
 import path from 'node:path';
+
 import { describe, expect, test } from 'vitest';
+
 import { locatePath, locatePathSync } from '../src/locate-path';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
